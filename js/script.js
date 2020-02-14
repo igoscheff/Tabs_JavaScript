@@ -53,7 +53,7 @@ window.addEventListener('DOMContentLoaded', function() {
         let t = Date.parse(endtime) - Date.parse(new Date()),
         seconds = Math.floor((t/1000) % 60),
         minutes = Math.floor((t/1000/60) % 60),
-        hours = Math.floor(t/1000/60/60);
+        hours = Math.floor(t/1000/60/60)
 
         return {
             'total' : t,
@@ -69,19 +69,19 @@ window.addEventListener('DOMContentLoaded', function() {
             hours = timer.querySelector('.hours'),
             minutes = timer.querySelector('.minutes'),
             seconds = timer.querySelector('.seconds'),
-            timeInterval = setInterval(updateClock, 1000);
+            timeInterval = setInterval(updateClock, 1000)
 
         function updateClock() {
-            let t = getTimeRemaining(endtime);
-            hours.textContent = t.hours < 10 ? '0' + t.hours : t.hours;
-            minutes.textContent = t.minutes < 10 ? '0' + t.minutes : t.minutes;
-            seconds.textContent = t.seconds < 10 ? '0' + t.seconds : t.seconds;
+            let t = getTimeRemaining(endtime)
+            hours.textContent = t.hours < 10 ? '0' + t.hours : t.hours
+            minutes.textContent = t.minutes < 10 ? '0' + t.minutes : t.minutes
+            seconds.textContent = t.seconds < 10 ? '0' + t.seconds : t.seconds
 
             if (t.total <= 0) {
                 clearInterval(timeInterval)
-                hours.textContent = '00';
-                minutes.textContent = '00';
-                seconds.textContent = '00';
+                hours.textContent = '00'
+                minutes.textContent = '00'
+                seconds.textContent = '00'
             }
         }
     }
@@ -89,4 +89,42 @@ window.addEventListener('DOMContentLoaded', function() {
     //Вызов функции установки и обнавления времени
     setClock('timer', deadline)
 
+    ///////////////////////// Модальное окно /////////////////////////
+
+    let moreBtn = document.querySelector('.more'),
+        closeBtn = document.querySelector('.popup-close'),
+        overlay = document.querySelector('.overlay')
+
+    moreBtn.addEventListener('click', function() {
+        if (overlay.style.display != 'block') {
+            overlay.style.display = 'block'
+            //Запрет на прокрутку страницы
+            document.body.style.overflow = 'hidden'
+        }
+    })
+
+    closeBtn.addEventListener('click', function() {
+        if (overlay.style.display == 'block') {
+            overlay.style.display = 'none'
+            //Отмена запрета на прокрутку страницы
+            document.body.style.overflow = ''
+        }
+    })
+
+    //Модали для табов, делегирование без повторов
+
+    let sectionInfo = document.querySelector('.info'),
+        tabBtns = sectionInfo.querySelectorAll('.description-btn')
+
+    sectionInfo.addEventListener('click', function(event) {
+        tabBtns.forEach(function(item) {
+            if (event.target == item) {
+                if (overlay.style.display != 'block') {
+                    overlay.style.display = 'block'
+                    document.body.style.overflow = 'hidden'
+                }
+            }
+        }) 
+    })
+    
 })
