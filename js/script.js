@@ -136,28 +136,45 @@ window.addEventListener('DOMContentLoaded', function () {
         failure: 'Что-то пошло не так...'
     };
 
-    //Получаем необходимые объекты со страницы и создаем div вывода сообщений
+    //Получаем и создаем необходимые объекты со страницы и создаем div вывода сообщений
     let form = document.querySelector('.main-form'),
         inputs = form.querySelectorAll('input'),
+        //Создаем объект нашей формы 1
+        form1 = {
+            form: form,
+            inputs: inputs
+        },
         contactForm = document.getElementById('form'),
         contactInputs = contactForm.querySelectorAll('input'),
+        //Создаем объект нашей формы 2
+        form2 = {
+            form: contactForm,
+            inputs: contactInputs
+        },
+        //Создаем объект конфигурации запроса
+        requestCfg = {
+            type: 'POST',
+            url: 'server.php',
+            headerName: 'Content-type',
+            headerValue: 'application/json; charset=utf-8'
+        },
         //Создаем HTML объект вывода сообщений пользователю
         statusMessage = document.createElement('div');
         //Добавляем класс нашему объекту сообщений пользователю
         statusMessage.classList.add('status');
 
     //Создаем функцию отправки форм
-    function formSend(form, inputs) {
+    function formSend(form, requestCfg) {
         //Навешиваем обработчик события submit на форму. Важно! Именно на форму а не кнопку!
-        form.addEventListener('submit', function (e) {
+        form.form.addEventListener('submit', function (e) {
             e.preventDefault(); //меняем стандартное поведение браузера
-            form.appendChild(statusMessage); //Добавляем объект на страницу
+            form.form.appendChild(statusMessage); //Добавляем объект на страницу
 
             //Создаем объект данных с формы
             let formDate = {};
             //Заполняем его данными из наших инпутов
-            for (let i = 0; i < inputs.length; i++) {
-                formDate[inputs[i].type] = inputs[i].value;
+            for (let i = 0; i < form.inputs.length; i++) {
+                formDate[form.inputs[i].type] = form.inputs[i].value;
             }
             //Преобразуем данные с формы в JSON строку
             let jsonDate = JSON.stringify(formDate);
@@ -165,8 +182,8 @@ window.addEventListener('DOMContentLoaded', function () {
             function postDate(date) { //Создаем функцию пост запроса к серверу
                 return new Promise(function (resolve, reject) { //Создаем промис
                     let request = new XMLHttpRequest(); //Создаем объект запроса
-                    request.open('POST', 'server.php'); //Открываем запрос
-                    request.setRequestHeader('Content-type', 'application/json; charset=utf-8'); //Заголовок запроса
+                    request.open(requestCfg.type, requestCfg.url); //Открываем запрос
+                    request.setRequestHeader(requestCfg.headerName, requestCfg.headerValue); //Заголовок запроса
                     //Навешиваем обработчик события при смене ready state на наш запрос, слушаем статусы запроса
                     request.onreadystatechange = function () {
                         //4 статус DONE, запрос прошел успешно
@@ -188,8 +205,8 @@ window.addEventListener('DOMContentLoaded', function () {
 
             //Функция отчистки инпутов формы
             function clearInputs() {
-                for (let i = 0; i < inputs.length; i++) {
-                    inputs[i].value = '';
+                for (let i = 0; i < form.inputs.length; i++) {
+                    form.inputs[i].value = '';
                 }
             }
 
@@ -203,7 +220,70 @@ window.addEventListener('DOMContentLoaded', function () {
     } //End formSend
 
     //Вызываем функции отпрвки формы для 2 наших форм
-    formSend(form, inputs);
-    formSend(contactForm, contactInputs);
+    formSend(form1, requestCfg);
+    formSend(form2, requestCfg);
+
+    ///////////////////////// Слайдер /////////////////////////
+
+    //Получаем все необходимые объекты со страницы
+    let slideIndex = 1,
+        slides = document.querySelectorAll('.slider-item'),
+        prev = document.querySelector('.prev'),
+        next = document.querySelector('.next'),
+        dotsWrap = document.querySelector('.slider-dots'),
+        dots = dotsWrap.querySelectorAll('.dot'),
+        interval = true,
+        intervalMs = 2000;
+
+    //Функция показа слайдов
+    function showSlides(n) {
+        //Сначала скрываем все слайды и делаем dots не активными
+        slides.forEach(item => item.style.display = 'none');
+        dots.forEach(item => item.classList.remove('dot-active'));
+        //А теперь показываем n слайд и делаем активной точку n, учитывая что слайд индекс начинается с 1 а коллекции с 0
+        slides[n - 1].style.display = 'block';
+        dots[n - 1].classList.add('dot-active');
+    }
+
+    //Показываем слайд по умолчанию (1)
+    showSlides(slideIndex);
+
+    //Функция выбора следующего слайда, учитывающая количество слайдов и их цикличность
+    function nextSlide(n) {
+        n++;
+        if (n > slides.length) n = 1;
+        showSlides(n);
+        slideIndex = n;
+    }
+
+    //Функция выбора предыдущего слайда, учитывающая количество слайдов и их цикличность
+    function prevSlide(n) {
+        n--;
+        if (n < 1) n = slides.length;
+        showSlides(n);
+        slideIndex = n;
+    }
+
+    //Обработчик на кнопку
+    next.addEventListener('click', () => {
+        nextSlide(slideIndex);
+    });
+
+    //Обработчик на кнопку
+    prev.addEventListener('click', () => {
+        prevSlide(slideIndex);
+    });
+
+    //Обработчик на dots с делегацией и логикой
+    dotsWrap.addEventListener('click',event => {
+        for (let i = 0; i < dots.length; i++) {
+            if (dots[i] === event.target) showSlides(i + 1);
+        }
+    });
+
+    //Автоматическое перелистывание слайдов
+    if (interval === true) {
+        setInterval(() => { nextSlide(slideIndex) }, intervalMs);
+    }
 
 });
