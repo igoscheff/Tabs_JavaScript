@@ -134,98 +134,76 @@ window.addEventListener('DOMContentLoaded', function () {
         loading: 'Загрузка...',
         success: 'Спасибо! Скоро мы с вами свяжемся!',
         failure: 'Что-то пошло не так...'
-    }
+    };
 
     //Получаем необходимые объекты со страницы и создаем div вывода сообщений
     let form = document.querySelector('.main-form'),
-        input = form.querySelectorAll('input'),
+        inputs = form.querySelectorAll('input'),
+        contactForm = document.getElementById('form'),
+        contactInputs = contactForm.querySelectorAll('input'),
+        //Создаем HTML объект вывода сообщений пользователю
         statusMessage = document.createElement('div');
+        //Добавляем класс нашему объекту сообщений пользователю
+        statusMessage.classList.add('status');
 
-    statusMessage.classList.add('status');
+    //Создаем функцию отправки форм
+    function formSend(form, inputs) {
+        //Навешиваем обработчик события submit на форму. Важно! Именно на форму а не кнопку!
+        form.addEventListener('submit', function (e) {
+            e.preventDefault(); //меняем стандартное поведение браузера
+            form.appendChild(statusMessage); //Добавляем объект на страницу
 
-    //Навешиваем обработчик события submit на форму. Важно! Именно на форму а не кнопку!
-    form.addEventListener('submit',(event) =>{
-        event.preventDefault(); //меняем стандартное поведение браузера
-        form.appendChild(statusMessage); //Добавляем объект на страницу
-
-        //Создаем объект запроса
-        let request = new XMLHttpRequest();
-        request.open('POST', 'server.php'); //Открываем запрос
-        request.setRequestHeader('Content-type', 'application/json; charset=utf-8'); //Заголовок запроса
-
-        //Получаем объект данных с формы типа FormDate, указывая объект нашей формы form
-        let formDate = new FormData(form);
-
-        //Создаем обычный объект для наших данных формы, так как FormDate имеет много лишних данных и нам не подходит
-        let objForm = {};
-
-        //Заполняем наш объект данными из FormDate
-        formDate.forEach((value, key) => {
-            objForm[key] = value;
-        });
-
-        //Преобразуем наш объект в строку JSON
-        let json = JSON.stringify(objForm);
-
-        //Отправляем наш json на сервер
-        request.send(json);
-
-        //Навешиваем обработчик на наш запрос, слушаем статусы запроса
-        request.addEventListener("readystatechange", () => {
-            //4 статус DONE, запрос прошел успешно
-            //0 = UNSENT, 1 = OPENED, 2 = HEADERS_RECEIVED, 3 = LOADING
-            if (request.readyState < 4) {
-                statusMessage.innerHTML = message.loading;
-            } else if (request.readyState === 4) {
-                statusMessage.innerHTML = message.success;
-            } else {
-                statusMessage.innerHTML = message.failure;
+            //Создаем объект данных с формы
+            let formDate = {};
+            //Заполняем его данными из наших инпутов
+            for (let i = 0; i < inputs.length; i++) {
+                formDate[inputs[i].type] = inputs[i].value;
             }
-        });
+            //Преобразуем данные с формы в JSON строку
+            let jsonDate = JSON.stringify(formDate);
 
-        //Очищаем все инпуты нашей формы
-        for (let i = 0; i < input.length; i++) {
-            input[i].value = '';
-        }
+            function postDate(date) { //Создаем функцию пост запроса к серверу
+                return new Promise(function (resolve, reject) { //Создаем промис
+                    let request = new XMLHttpRequest(); //Создаем объект запроса
+                    request.open('POST', 'server.php'); //Открываем запрос
+                    request.setRequestHeader('Content-type', 'application/json; charset=utf-8'); //Заголовок запроса
+                    //Навешиваем обработчик события при смене ready state на наш запрос, слушаем статусы запроса
+                    request.onreadystatechange = function () {
+                        //4 статус DONE, запрос прошел успешно
+                        //0 = UNSENT, 1 = OPENED, 2 = HEADERS_RECEIVED, 3 = LOADING
+                        if (request.readyState < 4) {
+                            resolve()
+                        } else if (request.readyState === 4) {
+                            if (request.status === 200) {
+                                resolve()
+                            } else {
+                                reject()
+                            }
+                        }
+                    };
+                    //Отправляем наши данные на сервер
+                    request.send(date);
+                })
+            } //End postDate
 
-    });
-
-    //Еще одна форма
-    let contactForm = document.getElementById('form'),
-        contactInput = contactForm.querySelectorAll('input');
-
-    contactForm.addEventListener("submit", (event) => {
-        event.preventDefault();
-        contactForm.appendChild(statusMessage);
-
-        let request = new XMLHttpRequest();
-        request.open('POST', 'server.php');
-        request.setRequestHeader('Content-type', 'application/json; charset=utf-8');
-
-        let objForm = {
-            email: '',
-            phone: ''
-        };
-
-        objForm.email = contactInput[0].value;
-        objForm.phone = contactInput[1].value;
-
-        request.send(JSON.stringify(objForm));
-
-        request.addEventListener("readystatechange", () => {
-            if (request.readyState < 4) {
-                statusMessage.innerHTML = message.loading;
-            } else if (request.readyState === 4) {
-                statusMessage.innerHTML = message.success;
-            } else {
-                statusMessage.innerHTML = message.failure;
+            //Функция отчистки инпутов формы
+            function clearInputs() {
+                for (let i = 0; i < inputs.length; i++) {
+                    inputs[i].value = '';
+                }
             }
-        });
 
-        for (let i = 0; i < contactInput.length; i++) {
-            contactInput[i].value = '';
-        }
+            //Вызываем функцию запроса к серверу с нашими JSON данными с формы
+            postDate(jsonDate)
+                //Дальше отрабатывает промис
+                .then(() => statusMessage.innerHTML = message.success)
+                .catch(() => statusMessage.innerHTML = message.failure)
+                .finally(clearInputs)
+        })
+    } //End formSend
 
-    });
+    //Вызываем функции отпрвки формы для 2 наших форм
+    formSend(form, inputs);
+    formSend(contactForm, contactInputs);
 
 });
